@@ -11,7 +11,6 @@
 #import <UIKit/UIGestureRecognizerSubclass.h>
 
 NSString * const STAttributedRangeAttribute = @"STAttributedRangeAttribute";
-NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 
 
 @interface STAttributedTapRecognizer : UIGestureRecognizer
@@ -160,12 +159,6 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
     
     self.pressRecognizer.longPressDuration = _handleLongPress ? 0.5 : 0.0;
 }
-
-//- (void)setUserInteractionEnabled:(BOOL)userInteractionEnabled
-//{
-//    [super setUserInteractionEnabled:userInteractionEnabled];
-//    self.pressRecognizer.enabled = userInteractionEnabled;
-//}
 
 
 
@@ -384,7 +377,14 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 }
 
 
-// only
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer
+{
+    if (gestureRecognizer == self.pressRecognizer) {
+        return YES;
+    }
+    
+    return NO;
+}
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch
 {
@@ -402,11 +402,10 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 
 
 
-@interface STAttributedTapRecognizer () {
-    NSDate *_touchDownTime;
-    CGPoint _touchDownPoint;
-}
+@interface STAttributedTapRecognizer ()
 
+@property (nonatomic) NSDate *touchDownTime;
+@property (nonatomic) CGPoint touchDownPoint;
 @property (nonatomic, copy) NSString *tapIdentifier;
 
 @end
@@ -419,6 +418,8 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
     if (self = [super initWithTarget:target action:action]) {
         _longPressDuration = 0.5;
         _allowableMovement = 5;
+        _touchDownPoint = CGPointZero;
+        _touchDownTime = nil;
     }
     
     return self;
@@ -426,11 +427,11 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 
 - (NSTimeInterval)elapsedTime
 {
-    if (!_touchDownTime) {
+    if (!self.touchDownTime) {
         return 0;
     }
     
-    return [[NSDate date] timeIntervalSinceDate:_touchDownTime];
+    return [[NSDate date] timeIntervalSinceDate:self.touchDownTime];
 }
 
 
@@ -441,8 +442,8 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
     if (touches.count == 1) {
         UITouch *touch = touches.anyObject;
         if (touch) {
-            _touchDownTime = [NSDate date];
-            _touchDownPoint = [touch locationInView:self.view];
+            self.touchDownTime = [NSDate date];
+            self.touchDownPoint = [touch locationInView:self.view];
             
             NSString *tapIdentifier = [[NSUUID UUID] UUIDString];
             self.tapIdentifier = tapIdentifier;
@@ -474,12 +475,12 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 {
     [super touchesMoved:touches withEvent:event];
     
-    if (touches.count == 1 && _touchDownTime) {
+    if (touches.count == 1 && self.touchDownTime) {
         UITouch *touch = touches.anyObject;
         
         if (touch) {
             CGPoint locationOfTouch = [touch locationInView:self.view];
-            CGPoint translation = CGPointMake(fabs(_touchDownPoint.x - locationOfTouch.x), fabs(_touchDownPoint.y - locationOfTouch.y));
+            CGPoint translation = CGPointMake(fabs(self.touchDownPoint.x - locationOfTouch.x), fabs(self.touchDownPoint.y - locationOfTouch.y));
 //            NSLog(@"translation: %@", NSStringFromCGPoint(translation));
             
             if (translation.x > self.allowableMovement || translation.y > self.allowableMovement) {
@@ -509,8 +510,8 @@ NSString * const STAttributedMentionIdentifier = @"STAttributedMention";
 - (void)reset
 {
     [super reset];
-    _touchDownPoint = CGPointZero;
-    _touchDownTime = nil;
+    self.touchDownPoint = CGPointZero;
+    self.touchDownTime = nil;
     self.tapIdentifier = nil;
 }
 

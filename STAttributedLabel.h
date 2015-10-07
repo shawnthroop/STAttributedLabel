@@ -19,11 +19,6 @@ typedef NS_ENUM(NSInteger, STVerticalTextAlignment) {
 extern NSString * const STAttributedRangeAttribute;
 
 
-extern NSString * const STAttributedMentionIdentifier;
-
-
-
-
 @interface STAttributedRange : NSObject <NSCoding>
 
 @property (nonatomic, readonly, copy) NSString *rangeType;
